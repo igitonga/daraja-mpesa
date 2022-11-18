@@ -31,7 +31,6 @@ class MpesaController extends Controller
 
     //register urls
     public function registerURLS(){
-        //dd(env('MPESA_BASE_URL'));
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
@@ -94,6 +93,7 @@ class MpesaController extends Controller
         return $response;
     }
 
+    //business to customer simulation
     public function b2c(){
         $curl = curl_init();
 
@@ -130,10 +130,11 @@ class MpesaController extends Controller
         return $response;
     }
 
+    //online customer to business
     public function stkPush(){
         $curl = curl_init();
 
-        $BusinessShortCode = "174379";
+        $BusinessShortCode = 174379;
         $Timestamp = date('YmdHis');
         $PasswordKey = env('MPESA_PASS_KEY');
         $Password=base64_encode($BusinessShortCode.$PasswordKey.$Timestamp);
@@ -152,13 +153,13 @@ class MpesaController extends Controller
             "Password" => $Password,
             "Timestamp" => $Timestamp,
             "TransactionType" => "CustomerPayBillOnline",
-            "Amount" => "1",
-            "PartyA" => "254713394693",
-            "PartyB" => env('MPESA_SHORTCODE'),
-            "PhoneNumber" => "254713394693",
+            "Amount" => 1,
+            "PartyA" => 254713394693,
+            "PartyB" => $BusinessShortCode,
+            "PhoneNumber" => 254713394693,
             "CallBackURL" => env('MPESA_TEST_URL')."/callback/stkpush",
-            "AccountReference" => "Test",
-            "TransactionDesc" => "Test"
+            "AccountReference" => "LC",
+            "TransactionDesc" => "Deposit"
         )),
         CURLOPT_HTTPHEADER => array(
             'Authorization: Bearer '.$this->getAccessToken(),
@@ -177,188 +178,75 @@ class MpesaController extends Controller
      *Responses coming from SAFARICOM
      */
     public function validation(Request $request){
-        $callbackResponse = ($request->all());
-        $object = \json_decode($callbackResponse, true);
-        $stkCallBack = json_encode($object['Body']['stkCallback']);
-        $callBackData = json_decode($stkCallBack,true);
-        //get result code
-        $ResultCode = json_encode($object['Body']['stkCallback']['ResultCode']);
+        // DATA
+        $mpesaResponse = file_get_contents('php://input');
+        // log the response
+        $logFile = "M_PESAConfirmationResponse.txt";
+        // write to file
+        $log = fopen($logFile, "a");
+    
+        fwrite($log, $mpesaResponse);
+        fclose($log);
 
-        //handle success result code
-        if($ResultCode == 0){
-
-            //access values in the stkCallback
-            $MerchantRequestID = json_encode($callBackData['MerchantRequestID']);
-            $CheckoutRequestID = json_encode($callBackData['CheckoutRequestID']);
-            $ResultDesc = json_encode($callBackData['ResultDesc']);
-
-
-            //get user details data in CallbackMetadata
-            $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
-            $data = json_decode($CallbackMetadata,true);
-            $Amount = json_encode($data[0]['Value']);
-            $MpesaReceiptNumber = json_encode($data[1]['Value']);
-            //$Balance = json_encode($data[2]['Name']);
-            $Balance = "0";
-            $TransactionDate = json_encode($data[2]['Value']);
-            $PhoneNumber = json_encode($data[3]['Value']);
-
-            //echo our data
-            echo "Amount: ".$Amount."\n";
-            echo "MpesaReceiptNumber: ".$MpesaReceiptNumber."\n";
-            echo "Balance: ".$Balance."\n";
-            echo "TransactionDate: ".$TransactionDate."\n";
-            echo "PhoneNumber: ".$PhoneNumber."\n";
-            echo "MerchantRequestID: ".$MerchantRequestID."\n";
-            echo "CheckoutRequestID: ".$CheckoutRequestID."\n";
-            echo "ResultDesc: ".$ResultDesc."\n";
-
-            //'P_AMOUNT','P_RECEIPTNUMBER','P_BALANCE','P_TRANSACTIONDATE','P_PHONENUMBER', 'P_MERCHANTREQUEST', 'P_CHECKOUTREQUEST'
-
-            // if ($val){
-            //     $data['respcode'] = "00";
-            //     $data['respdecs'] = $ResultDesc;
-            // }else{
-            //     $data['respcode'] = "01";
-            //     $data['respdecs'] = "Something went wrong while processing your transaction. Please contact customer care for assistance";
-            // }
-
-            return view('callback', \compact('Amount'));
-
-        } else{
-            //handle failed response code
-        // $ResultDesc = json_encode($callBackData['ResultDesc']);
-            echo "Failed to complete transaction. Please try again later";
-        }
-
+        return [
+            'ResultCode' => 0,
+            'ResultDesc' => 'Accept Service',
+            'ThirdPartyTransID' => rand(3000, 10000)
+        ];
     }
 
     public function confirmation(Request $request){
-        \Log::info($request->getContent());
+        // DATA
+        $mpesaResponse = file_get_contents('php://input');
+        // log the response
+        $logFile = "M_PESAConfirmationResponse.txt";
+        // write to file
+        $log = fopen($logFile, "a");
+    
+        fwrite($log, $mpesaResponse);
+        fclose($log);
+    
+        echo $response;
 
         return [
             'ResultCode' => 0,
             'ResultDesc' => 'Accept Service',
             'ThirdPartyTransID' => rand(3000, 10000)
         ];
-    }
+}
 
     public function queueTimeOut(Request $request){
-        $callbackResponse = $request->all();
-        $object = json_decode($callbackResponse, true);
-        $stkCallBack = json_encode($object['Body']['stkCallback']);
-        $callBackData = json_decode($stkCallBack,true);
-        //get result code
-        $ResultCode = json_encode($object['Body']['stkCallback']['ResultCode']);
-
-        //handle success result code
-        if($ResultCode == 0){
-
-            //access values in the stkCallback
-            $MerchantRequestID = json_encode($callBackData['MerchantRequestID']);
-            $CheckoutRequestID = json_encode($callBackData['CheckoutRequestID']);
-            $ResultDesc = json_encode($callBackData['ResultDesc']);
-
-
-            //get user details data in CallbackMetadata
-            $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
-            $data = json_decode($CallbackMetadata,true);
-            $Amount = json_encode($data[0]['Value']);
-            $MpesaReceiptNumber = json_encode($data[1]['Value']);
-            //$Balance = json_encode($data[2]['Name']);
-            $Balance = "0";
-            $TransactionDate = json_encode($data[2]['Value']);
-            $PhoneNumber = json_encode($data[3]['Value']);
-
-            //echo our data
-            echo "Amount: ".$Amount."\n";
-            echo "MpesaReceiptNumber: ".$MpesaReceiptNumber."\n";
-            echo "Balance: ".$Balance."\n";
-            echo "TransactionDate: ".$TransactionDate."\n";
-            echo "PhoneNumber: ".$PhoneNumber."\n";
-            echo "MerchantRequestID: ".$MerchantRequestID."\n";
-            echo "CheckoutRequestID: ".$CheckoutRequestID."\n";
-            echo "ResultDesc: ".$ResultDesc."\n";
-
-            //'P_AMOUNT','P_RECEIPTNUMBER','P_BALANCE','P_TRANSACTIONDATE','P_PHONENUMBER', 'P_MERCHANTREQUEST', 'P_CHECKOUTREQUEST'
-
-            // if ($val){
-            //     $data['respcode'] = "00";
-            //     $data['respdecs'] = $ResultDesc;
-            // }else{
-            //     $data['respcode'] = "01";
-            //     $data['respdecs'] = "Something went wrong while processing your transaction. Please contact customer care for assistance";
-            // }
-
-            return view('callback', \compact('Amount'));
-
-        } else{
-            //handle failed response code
-        // $ResultDesc = json_encode($callBackData['ResultDesc']);
-            echo "Failed to complete transaction. Please try again later";
-        }
+        // DATA
+        $mpesaResponse = file_get_contents('php://input');
+        // log the response
+        $logFile = "M_PESAConfirmationResponse.txt";
+        // write to file
+        $log = fopen($logFile, "a");
+    
+        fwrite($log, $mpesaResponse);
+        fclose($log);
+    
+        echo $response;
 
         return [
             'ResultCode' => 0,
             'ResultDesc' => 'Accept Service',
             'ThirdPartyTransID' => rand(3000, 10000)
         ];
-    }
+}
 
     public function result(Request $request){
-        $callbackResponse = $request->getContent();
-        $object = json_decode($callbackResponse, true);
-        $stkCallBack = json_encode($object['Body']['stkCallback']);
-        $callBackData = json_decode($stkCallBack,true);
-        //get result code
-        $ResultCode = json_encode($object['Body']['stkCallback']['ResultCode']);
-
-        //handle success result code
-        if($ResultCode == 0){
-
-            //access values in the stkCallback
-            $MerchantRequestID = json_encode($callBackData['MerchantRequestID']);
-            $CheckoutRequestID = json_encode($callBackData['CheckoutRequestID']);
-            $ResultDesc = json_encode($callBackData['ResultDesc']);
-
-
-            //get user details data in CallbackMetadata
-            $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
-            $data = json_decode($CallbackMetadata,true);
-            $Amount = json_encode($data[0]['Value']);
-            $MpesaReceiptNumber = json_encode($data[1]['Value']);
-            //$Balance = json_encode($data[2]['Name']);
-            $Balance = "0";
-            $TransactionDate = json_encode($data[2]['Value']);
-            $PhoneNumber = json_encode($data[3]['Value']);
-
-            //echo our data
-            echo "Amount: ".$Amount."\n";
-            echo "MpesaReceiptNumber: ".$MpesaReceiptNumber."\n";
-            echo "Balance: ".$Balance."\n";
-            echo "TransactionDate: ".$TransactionDate."\n";
-            echo "PhoneNumber: ".$PhoneNumber."\n";
-            echo "MerchantRequestID: ".$MerchantRequestID."\n";
-            echo "CheckoutRequestID: ".$CheckoutRequestID."\n";
-            echo "ResultDesc: ".$ResultDesc."\n";
-
-            //'P_AMOUNT','P_RECEIPTNUMBER','P_BALANCE','P_TRANSACTIONDATE','P_PHONENUMBER', 'P_MERCHANTREQUEST', 'P_CHECKOUTREQUEST'
-
-            // if ($val){
-            //     $data['respcode'] = "00";
-            //     $data['respdecs'] = $ResultDesc;
-            // }else{
-            //     $data['respcode'] = "01";
-            //     $data['respdecs'] = "Something went wrong while processing your transaction. Please contact customer care for assistance";
-            // }
-
-            return view('callback', \compact('Amount'));
-
-        } else{
-            //handle failed response code
-        // $ResultDesc = json_encode($callBackData['ResultDesc']);
-            echo "Failed to complete transaction. Please try again later";
-        }
+        // DATA
+        $mpesaResponse = file_get_contents('php://input');
+        // log the response
+        $logFile = "M_PESAConfirmationResponse.txt";
+        // write to file
+        $log = fopen($logFile, "a");
+    
+        fwrite($log, $mpesaResponse);
+        fclose($log);
+    
+        echo $response;
 
         return [
             'ResultCode' => 0,
@@ -367,15 +255,35 @@ class MpesaController extends Controller
         ];
     }
 
-    public function stkPushCallback(Request $request){
-        Log::info('STKPush endpoint hit');
-        Log::info($request->all());
+    public function stkPushCallback(){
+        //saving reponse to txt file
+        $mpesaResponse = file_get_contents('php://input');
+        $logFile = "MPESAConfirmationResponse.txt";
+        $log = fopen($logFile, "a");
+        fwrite($log, $mpesaResponse);
+        fclose($log);
+    
+        //reading from txt file
+        $file = \file_get_contents("M_PesaConfirmationResponse.txt");
+        $file2 = \json_decode($file, true);
+        $stkCallBack = json_encode($file2['Body']['stkCallback']);
+        $callBackData = json_decode($stkCallBack,true);
+        $ResultCode = json_encode($file2['Body']['stkCallback']['ResultCode']);
+        if($ResultCode == 0){
+            //get user details data in CallbackMetadata
+            $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
+            $data = json_decode($CallbackMetadata,true);
+            $Amount = json_encode($data[0]['Value']);
+            $MpesaReceiptNumber = json_encode($data[1]['Value']);
+            $TransactionDate = json_encode($data[2]['Value']);
+            $PhoneNumber = json_encode($data[3]['Value']);
 
-        return [
-            'ResultCode' => 0,
-            'ResultDesc' => 'Accept Service',
-            'ThirdPartyTransID' => rand(3000, 10000)
-        ];
+            //echo our data
+            echo "Amount: ".$Amount."\n";
+            echo "MpesaReceiptNumber: ".$MpesaReceiptNumber."\n";
+            echo "TransactionDate: ".$TransactionDate."\n";
+            echo "PhoneNumber: ".$PhoneNumber."\n";
+        }
     }
 
 }
