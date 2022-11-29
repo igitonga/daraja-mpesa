@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use App\Models\Transaction;
 
 class MpesaController extends Controller
 {    
@@ -262,27 +262,35 @@ class MpesaController extends Controller
         $log = fopen($logFile, "a");
         fwrite($log, $mpesaResponse);
         fclose($log);
-    
+    }
+
+    public function store(){
         //reading from txt file
-        $file = \file_get_contents("M_PesaConfirmationResponse.txt");
+        $file = \file_get_contents("MPESAConfirmationResponse.txt");
         $file2 = \json_decode($file, true);
         $stkCallBack = json_encode($file2['Body']['stkCallback']);
         $callBackData = json_decode($stkCallBack,true);
         $ResultCode = json_encode($file2['Body']['stkCallback']['ResultCode']);
+        
         if($ResultCode == 0){
             //get user details data in CallbackMetadata
             $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
             $data = json_decode($CallbackMetadata,true);
             $Amount = json_encode($data[0]['Value']);
             $MpesaReceiptNumber = json_encode($data[1]['Value']);
-            $TransactionDate = json_encode($data[2]['Value']);
-            $PhoneNumber = json_encode($data[3]['Value']);
+            $TransactionDate = json_encode($data[3]['Value']);
+            $PhoneNumber = json_encode($data[4]['Value']);
 
-            //echo our data
-            echo "Amount: ".$Amount."\n";
-            echo "MpesaReceiptNumber: ".$MpesaReceiptNumber."\n";
-            echo "TransactionDate: ".$TransactionDate."\n";
-            echo "PhoneNumber: ".$PhoneNumber."\n";
+            //save to MPESA transactions table    
+            $transaction = new Transaction;
+            $transaction->user_id = 1;
+            $transaction->type = "Deposit";
+            $transaction->amount = $Amount;
+            $transaction->receipt_number = str_replace(['"',"'"], "", $MpesaReceiptNumber);
+            $transaction->transaction_date = $TransactionDate;
+            $transaction->phone_number = $PhoneNumber;
+            $transaction->status = "done";
+            $transaction->save();
         }
     }
 
