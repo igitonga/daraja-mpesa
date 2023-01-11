@@ -25,7 +25,7 @@ Route::get('/mp/accesstoken',[MpesaController::class, 'getAccessToken']);
 Route::get('/registerurl',[MpesaController::class, 'registerURLS']);
 Route::get('/c2b',[MpesaController::class, 'c2b']);
 Route::get('/b2c',[MpesaController::class, 'b2c']);
-Route::get('/stkpush',[MpesaController::class, 'stkPush']);
+Route::post('/stkpush',[MpesaController::class, 'stkPush']);
 Route::get('/store', [MpesaController::class, 'store']);
 
 /*

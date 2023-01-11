@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\Session;
 
 class MpesaController extends Controller
 {    
@@ -57,7 +58,15 @@ class MpesaController extends Controller
         $response = json_decode(curl_exec($curl));
 
         curl_close($curl);
-        return $response;
+        
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','URL successfully registered'); 
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
         
     }
 
@@ -94,7 +103,7 @@ class MpesaController extends Controller
     }
 
     //business to customer simulation
-    public function b2c(){
+    public function b2c(Request $request){
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
@@ -110,9 +119,9 @@ class MpesaController extends Controller
             "InitiatorName" => "John Doe",
             "SecurityCredential" => env('MPESA_SECURITY_CREDENTIALS'),
             "CommandID" => "BusinessPayment",
-            "Amount" => "1",
+            "Amount" => $request->amount,
             "PartyA" => env('MPESA_SHORTCODE'),
-            "PartyB" => "254708374149",
+            "PartyB" => $request->phone,
             "Remarks" => "None",
             "QueueTimeOutURL" => env('MPESA_TEST_URL')."/callback/queue",
             "ResultURL" => env('MPESA_TEST_URL')."/callback/result",
@@ -125,13 +134,21 @@ class MpesaController extends Controller
         ));
         
         $response = json_decode(curl_exec($curl));
-
+dd($response);
         curl_close($curl);
-        return $response;
+        
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','URL successfully registered'); 
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
     }
 
     //online customer to business
-    public function stkPush(){
+    public function stkPush(Request $request){
         $curl = curl_init();
 
         $BusinessShortCode = 174379;
@@ -153,8 +170,8 @@ class MpesaController extends Controller
             "Password" => $Password,
             "Timestamp" => $Timestamp,
             "TransactionType" => "CustomerPayBillOnline",
-            "Amount" => 1,
-            "PartyA" => 254713394693,
+            "Amount" => $request->amount,
+            "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
             "PhoneNumber" => 254713394693,
             "CallBackURL" => env('MPESA_TEST_URL')."/callback/stkpush",
@@ -170,7 +187,15 @@ class MpesaController extends Controller
         $response = json_decode(curl_exec($curl));
 
         curl_close($curl);
-        return $response;
+        
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','Input your mpesa pin'); 
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
     }
 
 
