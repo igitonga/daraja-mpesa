@@ -5,29 +5,20 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Session;
+use App\Models\MpesaAuthToken;
 
 class MpesaController extends Controller
 {    
     // generating access token >> Auth
     public function getAccessToken(){
-        //dd(base64_encode(env('MPESA_CONSUMER_KEY')));
-        $curl = curl_init();
-        curl_setopt_array(
-            $curl,
-            array(
-                CURLOPT_URL => env('MPESA_BASE_URL').'/oauth/v1/generate?grant_type=client_credentials',
-                CURLOPT_CUSTOMREQUEST => 'GET',
-                CURLOPT_HTTPHEADER => [
-                    'Authorization: Basic QXpzMktlalUxQVJ2SUw1SmRKc0FSYlYyZ0RyV21wT0I6aGlwR3ZGSmJPeHJpMzMwYw=='
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-            )
-        );
-        $response = json_decode(curl_exec($curl));
-        curl_close($curl);
+        $securityCredential = base64_encode(env('MPESA_CONSUMER_KEY').':'.env('MPESA_CONSUMER_SECRET'));
 
-        // return $response;
-        return $response->access_token;
+        $ch = curl_init(env('MPESA_BASE_URL').'/oauth/v1/generate?grant_type=client_credentials');
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic b1Q3SmZBSFdPOWZCQk9kT3BTc3ZZRG0yT1RvQVRJT3M6bzFKb2ZuR1daMGdKOEdJbw==']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $response = curl_exec($ch);
+        curl_close($ch);
+        return json_decode($response);
     }
 
     //register urls
