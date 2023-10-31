@@ -10,14 +10,15 @@ use App\Models\MpesaAuthToken;
 class MpesaController extends Controller
 {    
     // generating access token >> Auth
-    public function getAccessToken(){
-        $securityCredential = base64_encode(env('MPESA_CONSUMER_KEY').':'.env('MPESA_CONSUMER_SECRET'));
+    public function getAccessToken($consumerKey,$consumerSecert){
+        $securityCredential = base64_encode($consumerKey.':'.$consumerSecert);
 
         $ch = curl_init(env('MPESA_BASE_URL').'/oauth/v1/generate?grant_type=client_credentials');
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic b1Q3SmZBSFdPOWZCQk9kT3BTc3ZZRG0yT1RvQVRJT3M6bzFKb2ZuR1daMGdKOEdJbw==']);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic '.$securityCredential]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         $response = curl_exec($ch);
         curl_close($ch);
+
         return json_decode($response);
     }
 
@@ -61,12 +62,10 @@ class MpesaController extends Controller
         
     }
 
-    //customer to business simulation
-    public function c2b(){
+    public function makePayment($token,$body,$url){
         $curl = curl_init();
-
         curl_setopt_array($curl, array(
-        CURLOPT_URL => env('MPESA_BASE_URL').'/mpesa/c2b/v1/simulate',
+        CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
@@ -74,15 +73,9 @@ class MpesaController extends Controller
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode(array(
-            "ShortCode" => env('MPESA_SHORTCODE'),
-            "CommandID" => "CustomerPayBillOnline",
-            "Amount" => "1",
-            "Msisdn" => "254708374149",
-            "BillRefNumber" => "MI1"
-        )),
+        CURLOPT_POSTFIELDS => json_encode($body),
         CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$this->getAccessToken(),
+            'Authorization: Bearer '.$token,
             'Content-Type: application/json',
         ),
         ));
@@ -90,23 +83,24 @@ class MpesaController extends Controller
         $response = json_decode(curl_exec($curl));
 
         curl_close($curl);
-        return $response;
+
+        dd($response);
+    }
+
+    //customer to business simulation
+    public function c2b(){
+        $body = array(
+            "ShortCode" => env('MPESA_SHORTCODE'),
+            "CommandID" => "CustomerPayBillOnline",
+            "Amount" => "1",
+            "Msisdn" => "254708374149",
+            "BillRefNumber" => "MI1"
+        );
     }
 
     //business to customer simulation
     public function b2c(Request $request){
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => env('MPESA_BASE_URL').'/mpesa/b2c/v1/paymentrequest',
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => '',
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => 'POST',
-          CURLOPT_POSTFIELDS => json_encode(array(
+        $body = array(
             "InitiatorName" => "John Doe",
             "SecurityCredential" => env('MPESA_SECURITY_CREDENTIALS'),
             "CommandID" => "BusinessPayment",
@@ -117,16 +111,7 @@ class MpesaController extends Controller
             "QueueTimeOutURL" => env('MPESA_TEST_URL')."/callback/queue",
             "ResultURL" => env('MPESA_TEST_URL')."/callback/result",
           "Occasion" => "None"
-         )),
-          CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$this->getAccessToken(),
-            'Content-Type: application/json'
-          ),
-        ));
-        
-        $response = json_decode(curl_exec($curl));
-dd($response);
-        curl_close($curl);
+        );  
         
         if($response->ResponseCode == "0"){
             Session::flash('Success','URL successfully registered'); 
@@ -140,23 +125,15 @@ dd($response);
 
     //online customer to business
     public function stkPush(Request $request){
-        $curl = curl_init();
+        $token = MpesaAuthToken::first();
+        $url = env('MPESA_BASE_URL').'/mpesa/stkpush/v1/processrequest';
 
         $BusinessShortCode = 174379;
         $Timestamp = date('YmdHis');
         $PasswordKey = env('MPESA_PASS_KEY');
         $Password=base64_encode($BusinessShortCode.$PasswordKey.$Timestamp);
 
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => env('MPESA_BASE_URL').'/mpesa/stkpush/v1/processrequest',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode(array(
+        $body = array(
             "BusinessShortCode" => $BusinessShortCode,
             "Password" => $Password,
             "Timestamp" => $Timestamp,
@@ -165,28 +142,21 @@ dd($response);
             "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
             "PhoneNumber" => 254713394693,
-            "CallBackURL" => env('MPESA_TEST_URL')."/callback/stkpush",
+            "CallBackURL" => env('MPESA_CALLBACK_URL')."/callback/stkpush",
             "AccountReference" => "LC",
             "TransactionDesc" => "Deposit"
-        )),
-        CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$this->getAccessToken(),
-            'Content-Type: application/json',
-        ),
-        ));
+        );
 
-        $response = json_decode(curl_exec($curl));
-
-        curl_close($curl);
+        $this->makePayment($token,$body,$url);
         
-        if($response->ResponseCode == "0"){
-            Session::flash('Success','Input your mpesa pin'); 
-            return redirect()->back();
-         }
-         else{
-            Session::flash('error','Something went wrong'); 
-            return redirect()->back();
-         }
+        // if($response->ResponseCode == "0"){
+        //     Session::flash('Success','Input your mpesa pin'); 
+        //     return redirect()->back();
+        //  }
+        //  else{
+        //     Session::flash('error','Something went wrong'); 
+        //     return redirect()->back();
+        //  }
     }
 
 
