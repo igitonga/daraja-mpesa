@@ -84,7 +84,7 @@ class MpesaController extends Controller
 
         curl_close($curl);
 
-        dd($response);
+        return $response;
     }
 
     //customer to business simulation
@@ -123,9 +123,9 @@ class MpesaController extends Controller
          }
     }
 
-    //online customer to business
+    //stkpush customer to business
     public function stkPush(Request $request){
-        $token = MpesaAuthToken::first();
+        $auth = MpesaAuthToken::first();
         $url = env('MPESA_BASE_URL').'/mpesa/stkpush/v1/processrequest';
 
         $BusinessShortCode = 174379;
@@ -141,22 +141,22 @@ class MpesaController extends Controller
             "Amount" => $request->amount,
             "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
-            "PhoneNumber" => 254713394693,
-            "CallBackURL" => env('MPESA_CALLBACK_URL')."/callback/stkpush",
+            "PhoneNumber" => $request->phone,
+            "CallBackURL" => "https://webhook.site/5666bc71-3c56-4c1d-84a7-a01afc4b753e",
             "AccountReference" => "LC",
             "TransactionDesc" => "Deposit"
         );
 
-        $this->makePayment($token,$body,$url);
+        $response = $this->makePayment($auth->token,$body,$url);
         
-        // if($response->ResponseCode == "0"){
-        //     Session::flash('Success','Input your mpesa pin'); 
-        //     return redirect()->back();
-        //  }
-        //  else{
-        //     Session::flash('error','Something went wrong'); 
-        //     return redirect()->back();
-        //  }
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','Input your mpesa pin'); 
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
     }
 
 
