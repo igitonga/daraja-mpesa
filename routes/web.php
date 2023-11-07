@@ -35,6 +35,6 @@ Route::post('/callback/validation', [MpesaController::class, 'validation']);
 Route::post('/callback/confirmation', [MpesaController::class, 'confirmation']);
 Route::post('/callback/queue', [MpesaController::class, 'queueTimeOut']);
 Route::post('/callback/result', [MpesaController::class, 'result']);
-Route::post('/callback/stkpush', [MpesaController::class, 'stkPushCallback']);
+Route::post('/response/callback/{id}', [MpesaController::class, 'responseCallback']);
 
 

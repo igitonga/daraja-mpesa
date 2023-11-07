@@ -32,7 +32,8 @@ class RefreshMpesaAuthToken extends Command
     {
         $mpesaController = new MpesaController;
         $mpesaAuthToken = MpesaAuthToken::first();
-        
+        error_log("Fetching auth token....");
+
         $auth = $mpesaController->getAccessToken(env('MPESA_CONSUMER_KEY'),env('MPESA_CONSUMER_SECRET'));
 
         if(is_null($mpesaAuthToken)){
@@ -40,13 +41,13 @@ class RefreshMpesaAuthToken extends Command
             $model->token = $auth->access_token;
             $model->expires_at = now()->addSeconds($auth->expires_in);
             $model->save();
-            error_log("Authorization token saved...");
+            error_log("Authorization token saved");
         }
         elseif($mpesaAuthToken)   { 
             $mpesaAuthToken->token = $auth->access_token;
             $mpesaAuthToken->expires_at = now()->addSeconds($auth->expires_in);
             $mpesaAuthToken->save();
-            error_log("Authorization token saved...");
+            error_log("Authorization token saved");
         }
         else{
             error_log("Token not generated");

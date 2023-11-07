@@ -13,12 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('transactions', function (Blueprint $table) {
-            $table->increments('id');
-            $table->integer('amount')->nullable();
-            $table->string('type')->nullable();
-            $table->string('phone_number', 20)->nullable();
-            $table->enum('status',['success','pending','failed'])->default('pending');
+        Schema::create('transaction_callbacks', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('transaction_id');
+            $table->string('merchant_request_id');
+            $table->string('checkout_request_id');
+            $table->string('result_description');
+            $table->string('callback_metadata',5000)->nullable();
             $table->timestamps();
         });
     }
@@ -30,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('transactions');
+        Schema::dropIfExists('transaction_callbacks');
     }
 };

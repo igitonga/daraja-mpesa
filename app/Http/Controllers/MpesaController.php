@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Session;
 use App\Models\MpesaAuthToken;
+use App\Models\TransactionCallback;
 
 class MpesaController extends Controller
 {    
@@ -89,13 +90,26 @@ class MpesaController extends Controller
 
     //customer to business simulation
     public function c2b(){
+        $auth = MpesaAuthToken::first();
+        $url = env('MPESA_BASE_URL').'/mpesa/c2b/v1/registerurl';
+
         $body = array(
             "ShortCode" => env('MPESA_SHORTCODE'),
             "CommandID" => "CustomerPayBillOnline",
             "Amount" => "1",
-            "Msisdn" => "254708374149",
+            "Msisdn" => $request->phone,
             "BillRefNumber" => "MI1"
         );
+        $response = $this->makePayment($auth->token,$body,$url);
+        
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','Input your mpesa pin'); 
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
     }
 
     //business to customer simulation
@@ -133,6 +147,12 @@ class MpesaController extends Controller
         $PasswordKey = env('MPESA_PASS_KEY');
         $Password=base64_encode($BusinessShortCode.$PasswordKey.$Timestamp);
 
+        $transaction = new Transaction;
+        $transaction->amount = $request->amount;
+        $transaction->type = 'c2b';
+        $transaction->phone_number = $request->phone;
+        $transaction->save();
+
         $body = array(
             "BusinessShortCode" => $BusinessShortCode,
             "Password" => $Password,
@@ -142,7 +162,7 @@ class MpesaController extends Controller
             "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
             "PhoneNumber" => $request->phone,
-            "CallBackURL" => "https://webhook.site/5666bc71-3c56-4c1d-84a7-a01afc4b753e",
+            "CallBackURL" => env('MPESA_CALLBACK_URL').'/response/callback/'.$transaction->id,
             "AccountReference" => "LC",
             "TransactionDesc" => "Deposit"
         );
@@ -241,13 +261,18 @@ class MpesaController extends Controller
         ];
     }
 
-    public function stkPushCallback(){
-        //saving reponse to txt file
+    public function responseCallback(Request $request, $id){
+        $transaction = Transaction::find($id);
         $mpesaResponse = file_get_contents('php://input');
-        $logFile = "MPESAConfirmationResponse.txt";
-        $log = fopen($logFile, "a");
-        fwrite($log, $mpesaResponse);
-        fclose($log);
+dd($mpesaResponse);
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->merchant_request_id = '';
+        $transactionCallback->checkout_request_id = '';
+        $transactionCallback->result_description = '';
+        $transactionCallback->callback_metadata = '';
+        $transactionCallback->merchant_request_id = '';
+        $transactionCallback->save();
     }
 
     public function store(){
