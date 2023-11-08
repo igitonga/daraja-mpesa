@@ -140,6 +140,32 @@ class MpesaController extends Controller
          }
     }
 
+    public function dynamicQRcode(Request $request){
+        $auth = MpesaAuthToken::first();
+        $url = env('MPESA_BASE_URL').'/mpesa/qrcode/v1/generate';
+
+        $body = array(
+            "MerchantName" => 'LC Gitonga',
+            "RefNo" => 'Payment001',
+            "Amount" => $request->amount,
+            "TrxCode" => "BG",
+            "CPI" => "373132",
+            "CPI" => "300",
+        ); 
+
+        $response = $this->makePayment($auth->token,$body,$url);
+
+        if($response->ResponseCode == "0"){
+            $code = $response->QRCode;
+            Session::flash('Success','Read QR code below'); 
+            return view('welcome', compact('code'));
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            return redirect()->back();
+         }
+    }
+
 
     /*
      *Responses coming from SAFARICOM

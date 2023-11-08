@@ -22,6 +22,30 @@
         </style>
     </head>
     <body class="p-5">
+        <form action="{{ url('qrcode') }}" method="get">
+            @csrf
+            <h5>Dynamic QR code</h5>
+            @if (\Session::has('Success'))
+                <div class="alert alert-success">
+                    {!! \Session::get('Success') !!}
+                </div>
+            @endif                                
+            @if (\Session::has('error'))
+                <div class="alert alert-danger">
+                    {!! \Session::get('error') !!}
+                </div>
+            @endif 
+
+            @if (isset($code))
+            {!! QrCode::size(200)->generate('{{ $code }}') !!}
+            @else
+            <label for="amount">Amount</label><br>
+            <input id="amount" type="number" name="amount"><br>
+
+            <button class="btn btn-primary mt-3">Generate</button>
+            @endif
+
+        </form>
         <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
             @csrf
             <h5>Customer to Business (STKpush)</h5><br>

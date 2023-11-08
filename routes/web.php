@@ -22,6 +22,7 @@ Route::get('/', function () {
  *My user endpoints
 */
 Route::get('/mp/accesstoken',[MpesaController::class, 'getAccessToken']);
+Route::get('/qrcode',[MpesaController::class, 'dynamicQRcode']);
 Route::get('/c2b',[MpesaController::class, 'c2b']);
 Route::get('/b2c',[MpesaController::class, 'b2c']);
 Route::post('/stkpush',[MpesaController::class, 'stkPush']);
