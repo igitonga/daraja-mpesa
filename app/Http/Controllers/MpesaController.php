@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\Session;
 use App\Models\MpesaAuthToken;
 use App\Models\TransactionCallback;
+use Illuminate\Support\Facades\Log;
 
 class MpesaController extends Controller
 {    
@@ -21,46 +22,6 @@ class MpesaController extends Controller
         curl_close($ch);
 
         return json_decode($response);
-    }
-
-    //register urls
-    public function registerURLS(){
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-        CURLOPT_URL => env('MPESA_BASE_URL').'/mpesa/c2b/v1/registerurl',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode(array(
-            "ShortCode" => env('MPESA_SHORTCODE'),
-            "ResponseType" => "Completed",
-            "ConfirmationURL" => env('MPESA_TEST_URL')."/callback/confirmation",
-            "ValidationURL" => env('MPESA_TEST_URL')."/callback/validation"
-        )),
-        CURLOPT_HTTPHEADER => array(
-            'Authorization: Bearer '.$this->getAccessToken(),
-            'Content-Type: application/json',
-        ),
-        ));
-
-        $response = json_decode(curl_exec($curl));
-
-        curl_close($curl);
-        
-        if($response->ResponseCode == "0"){
-            Session::flash('Success','URL successfully registered'); 
-            return redirect()->back();
-         }
-         else{
-            Session::flash('error','Something went wrong'); 
-            return redirect()->back();
-         }
-        
     }
 
     public function makePayment($token,$body,$url){
@@ -162,13 +123,13 @@ class MpesaController extends Controller
             "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
             "PhoneNumber" => $request->phone,
-            "CallBackURL" => env('MPESA_CALLBACK_URL').'/response/callback/'.$transaction->id,
-            "AccountReference" => "LC",
+            "CallBackURL" => 'https://eed3-41-80-118-221.ngrok-free.app',
+            "AccountReference" => env('APP_NAME'),
             "TransactionDesc" => "Deposit"
         );
 
         $response = $this->makePayment($auth->token,$body,$url);
-        
+        dd($response);
         if($response->ResponseCode == "0"){
             Session::flash('Success','Input your mpesa pin'); 
             return redirect()->back();
@@ -183,44 +144,6 @@ class MpesaController extends Controller
     /*
      *Responses coming from SAFARICOM
      */
-    public function validation(Request $request){
-        // DATA
-        $mpesaResponse = file_get_contents('php://input');
-        // log the response
-        $logFile = "M_PESAConfirmationResponse.txt";
-        // write to file
-        $log = fopen($logFile, "a");
-    
-        fwrite($log, $mpesaResponse);
-        fclose($log);
-
-        return [
-            'ResultCode' => 0,
-            'ResultDesc' => 'Accept Service',
-            'ThirdPartyTransID' => rand(3000, 10000)
-        ];
-    }
-
-    public function confirmation(Request $request){
-        // DATA
-        $mpesaResponse = file_get_contents('php://input');
-        // log the response
-        $logFile = "M_PESAConfirmationResponse.txt";
-        // write to file
-        $log = fopen($logFile, "a");
-    
-        fwrite($log, $mpesaResponse);
-        fclose($log);
-    
-        echo $response;
-
-        return [
-            'ResultCode' => 0,
-            'ResultDesc' => 'Accept Service',
-            'ThirdPartyTransID' => rand(3000, 10000)
-        ];
-}
-
     public function queueTimeOut(Request $request){
         // DATA
         $mpesaResponse = file_get_contents('php://input');
@@ -239,7 +162,7 @@ class MpesaController extends Controller
             'ResultDesc' => 'Accept Service',
             'ThirdPartyTransID' => rand(3000, 10000)
         ];
-}
+    }
 
     public function result(Request $request){
         // DATA
@@ -262,9 +185,15 @@ class MpesaController extends Controller
     }
 
     public function responseCallback(Request $request, $id){
+        Log::info("------------KYC information response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
         $transaction = Transaction::find($id);
         $mpesaResponse = file_get_contents('php://input');
-dd($mpesaResponse);
         $transactionCallback = new TransactionCallback;
         $transactionCallback->transaction_id = $transaction->id;
         $transactionCallback->merchant_request_id = '';
@@ -273,36 +202,6 @@ dd($mpesaResponse);
         $transactionCallback->callback_metadata = '';
         $transactionCallback->merchant_request_id = '';
         $transactionCallback->save();
-    }
-
-    public function store(){
-        //reading from txt file
-        $file = \file_get_contents("MPESAConfirmationResponse.txt");
-        $file2 = \json_decode($file, true);
-        $stkCallBack = json_encode($file2['Body']['stkCallback']);
-        $callBackData = json_decode($stkCallBack,true);
-        $ResultCode = json_encode($file2['Body']['stkCallback']['ResultCode']);
-        
-        if($ResultCode == 0){
-            //get user details data in CallbackMetadata
-            $CallbackMetadata = json_encode($callBackData['CallbackMetadata']['Item']);
-            $data = json_decode($CallbackMetadata,true);
-            $Amount = json_encode($data[0]['Value']);
-            $MpesaReceiptNumber = json_encode($data[1]['Value']);
-            $TransactionDate = json_encode($data[3]['Value']);
-            $PhoneNumber = json_encode($data[4]['Value']);
-
-            //save to MPESA transactions table    
-            $transaction = new Transaction;
-            $transaction->user_id = 1;
-            $transaction->type = "Deposit";
-            $transaction->amount = $Amount;
-            $transaction->receipt_number = str_replace(['"',"'"], "", $MpesaReceiptNumber);
-            $transaction->transaction_date = $TransactionDate;
-            $transaction->phone_number = $PhoneNumber;
-            $transaction->status = "done";
-            $transaction->save();
-        }
     }
 
 }

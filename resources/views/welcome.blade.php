@@ -22,12 +22,6 @@
         </style>
     </head>
     <body class="p-5">
-        <form action="{{ url('registerurl') }}" method="get">
-            @csrf
-            <h5>Register URL (Done once)</h5>
-
-            <button class="btn btn-primary mt-3">Register</button>
-        </form>
         <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
             @csrf
             <h5>Customer to Business (STKpush)</h5><br>
