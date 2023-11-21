@@ -11,74 +11,113 @@
 
         <!-- Styles -->
         <style>
-            body {
+            .wrapper {
                 font-family: 'Nunito', sans-serif;
+                display: grid;
+                grid-template-columns: auto auto;
+                column-gap: 2em;
+                row-gap: 2em;
+                padding: 2em;
             }
-            form{
-                border: 1px solid grey;
+            .each-cont{
+                border: 2px solid #39b54a;
                 border-radius: 10px;
                 padding: 1em;
             }
+            h5{
+                color: #39b54a;
+                font-weight: 900;
+            }
+            .btn{
+                background: #39b54a;
+                color: #fff;
+            }
         </style>
     </head>
-    <body class="p-5">
-        <form action="{{ url('qrcode') }}" method="get">
-            @csrf
-            <h5>Dynamic QR code</h5>
-            @if (\Session::has('Success'))
-                <div class="alert alert-success">
-                    {!! \Session::get('Success') !!}
-                </div>
-            @endif                                
-            @if (\Session::has('error'))
-                <div class="alert alert-danger">
-                    {!! \Session::get('error') !!}
-                </div>
-            @endif 
+    <body>
+        <div class="wrapper">
+            {{-- dynamic qr code --}}
+            <div class="each-cont">
+                <form action="{{ url('qrcode') }}" method="get">
+                    @csrf
+                    <h5>Dynamic QR code</h5>
+                    @if (\Session::has('Success'))
+                        <div class="alert alert-success">
+                            {!! \Session::get('Success') !!}
+                        </div>
+                    @endif                                
+                    @if (\Session::has('error'))
+                        <div class="alert alert-danger">
+                            {!! \Session::get('error') !!}
+                        </div>
+                    @endif 
+        
+                    @if (isset($code))
+                    {!! QrCode::size(200)->generate('{{ $code }}') !!}
+                    @else
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount"><br>
+        
+                    <button class="btn mt-3">Generate</button>
+                    @endif
+        
+                </form>
+            </div>
 
-            @if (isset($code))
-            {!! QrCode::size(200)->generate('{{ $code }}') !!}
-            @else
-            <label for="amount">Amount</label><br>
-            <input id="amount" type="number" name="amount"><br>
+            {{-- c2b express --}}
+            <div class="each-cont">
+                <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
+                    @csrf
+                    <h5>Customer to Business (STKpush)</h5><br>
+                    @if (\Session::has('Success'))
+                        <div class="alert alert-success">
+                            {!! \Session::get('Success') !!}
+                        </div>
+                    @endif                                
+                    @if (\Session::has('error'))
+                        <div class="alert alert-danger">
+                            {!! \Session::get('error') !!}
+                        </div>
+                    @endif 
+                    <label for="phone">Phone number</label><br>
+                    <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
+        
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount"><br>
+        
+                    <button class="btn mt-3">Send</button>
+                </form>
+            </div>
 
-            <button class="btn btn-primary mt-3">Generate</button>
-            @endif
+            {{-- b2c express --}}
+            <div class="each-cont">
+                <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
+                    @csrf
+                    <h5>Business to Customer (STKpush)</h5><br>
+        
+                    <label for="phone">Phone number</label><br>
+                    <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
+        
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount"><br>
+        
+                    <button class="btn mt-3">Send</button>
+                </form>
+            </div>
 
-        </form>
-        <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
-            @csrf
-            <h5>Customer to Business (STKpush)</h5><br>
-            @if (\Session::has('Success'))
-                <div class="alert alert-success">
-                    {!! \Session::get('Success') !!}
-                </div>
-            @endif                                
-            @if (\Session::has('error'))
-                <div class="alert alert-danger">
-                    {!! \Session::get('error') !!}
-                </div>
-            @endif 
-            <label for="phone">Phone number</label><br>
-            <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
+            {{-- b2b --}}
+            <div class="each-cont">
+                <form action="{{ url('b2b') }}" method="POST" class="mt-3">
+                    @csrf
+                    <h5>Business to Business (USSD push)</h5><br>
 
-            <label for="amount">Amount</label><br>
-            <input id="amount" type="number" name="amount"><br>
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount"><br>
 
-            <button class="btn btn-primary mt-3">Send</button>
-        </form>
-        <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
-            @csrf
-            <h5>Business to Customer (STKpush)</h5><br>
-
-            <label for="phone">Phone number</label><br>
-            <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
-
-            <label for="amount">Amount</label><br>
-            <input id="amount" type="number" name="amount"><br>
-
-            <button class="btn btn-primary mt-3">Send</button>
-        </form>
+                    <button class="btn mt-3">Send</button>
+                </form>
+            </div>
+        </div>     
     </body>
     
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>

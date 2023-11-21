@@ -3,7 +3,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MpesaController;
-use App\Http\Controllers\MpesaResponseController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -14,7 +13,7 @@ use App\Http\Controllers\MpesaResponseController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
+Route::post('/response/callback/{id}', [MpesaController::class, 'responseCallback']);
 
 
 

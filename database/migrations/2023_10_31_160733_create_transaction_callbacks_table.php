@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('transaction_id');
             $table->string('merchant_request_id');
             $table->string('checkout_request_id');
-            $table->string('result_description');
+            $table->string('result_description',5000);
             $table->string('callback_metadata',5000)->nullable();
             $table->timestamps();
         });
