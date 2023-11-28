@@ -83,7 +83,7 @@
 
             {{-- b2c express --}}
             <div class="each-cont">
-                <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
+                <form action="{{ url('b2c') }}" method="POST" class="mt-3">
                     @csrf
                     <h5>Business to Customer (STKpush)</h5><br>
         
@@ -91,7 +91,7 @@
                     <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
         
                     <label for="amount">Amount</label><br>
-                    <input id="amount" type="number" name="amount"><br>
+                    <input id="amount" type="number" name="amount" placeholder="Minimum 10"><br>
         
                     <button class="btn mt-3">Send</button>
                 </form>

@@ -23,7 +23,6 @@ Route::get('/', function () {
 */
 Route::get('/mp/accesstoken',[MpesaController::class, 'getAccessToken']);
 Route::get('/qrcode',[MpesaController::class, 'dynamicQRcode']);
-Route::get('/c2b',[MpesaController::class, 'c2b']);
-Route::get('/b2c',[MpesaController::class, 'b2c']);
+Route::post('/b2c',[MpesaController::class, 'b2c']);
 Route::post('/stkpush',[MpesaController::class, 'stkPush']);
 Route::post('/b2b',[MpesaController::class, 'b2b']);

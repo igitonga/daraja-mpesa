@@ -52,33 +52,15 @@ class MpesaController extends Controller
         return $response;
     }
 
-    //customer to business simulation
-    public function c2b(){
-        $auth = MpesaAuthToken::first();
-        $url = env('MPESA_BASE_URL').'/mpesa/c2b/v1/registerurl';
-
-        $body = array(
-            "ShortCode" => env('MPESA_SHORTCODE'),
-            "CommandID" => "CustomerPayBillOnline",
-            "Amount" => "1",
-            "Msisdn" => $request->phone,
-            "BillRefNumber" => "MI1"
-        );
-        $response = $this->makePayment($auth->token,$body,$url);
-        
-        if($response->ResponseCode == "0"){
-            Session::flash('Success','Input your mpesa pin'); 
-            return redirect()->back();
-         }
-         else{
-            Session::flash('error','Something went wrong'); 
-            return redirect()->back();
-         }
-    }
-
     //business to customer simulation
     public function b2c(Request $request){
+        DB::beginTransaction();
         $auth = MpesaAuthToken::first();
+
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
+
         $url = env('MPESA_BASE_URL').'/mpesa/b2c/v3/paymentrequest';
 
         $transaction = new Transaction;
@@ -88,31 +70,35 @@ class MpesaController extends Controller
         $transaction->save();
 
         $body = array(
-            "InitiatorName" => "John Doe",
+            "OriginatorConversationID" => Str::random(12),
+            "InitiatorName" => "testapi",
             "SecurityCredential" => env('MPESA_SECURITY_CREDENTIALS'),
             "CommandID" => "BusinessPayment",
             "Amount" => $request->amount,
             "PartyA" => env('MPESA_SHORTCODE'),
             "PartyB" => $request->phone,
             "Remarks" => "None",
-            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL')."/api/queue/".$transaction->id,
-            "ResultURL" => env('MPESA_CALLBACK_URL')."/api/result/".$transaction->id,
+            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL')."/api/b2c/queue/".$transaction->id,
+            "ResultURL" => env('MPESA_CALLBACK_URL')."/api/b2c/result/".$transaction->id,
             "Occasion" => "None"
-        );  
+        ); 
+        
+        $response = $this->makePayment($auth->token,$body,$url);
         
         if(isset($response->errorCode)){
-            if($response->errorCode == "404.001.03"){
-                Session::flash('error','Access token has expired'); 
-                return redirect()->back();
-            }
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
         }
 
         if($response->ResponseCode == "0"){
-            Session::flash('Success','URL successfully registered'); 
+            Session::flash('Success','Transaction was successful'); 
+            DB::commit();
             return redirect()->back();
          }
          else{
             Session::flash('error','Something went wrong'); 
+            DB::rollback();
             return redirect()->back();
          }
     }
@@ -174,7 +160,13 @@ class MpesaController extends Controller
     }
 
     public function dynamicQRcode(Request $request){
+        DB::beginTransaction();
         $auth = MpesaAuthToken::first();
+
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
+
         $url = env('MPESA_BASE_URL').'/mpesa/qrcode/v1/generate';
 
         $body = array(
@@ -188,6 +180,12 @@ class MpesaController extends Controller
 
         $response = $this->makePayment($auth->token,$body,$url);
 
+        if(isset($response->errorCode)){
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
+        }
+
         if($response->ResponseCode == "0"){
             $code = $response->QRCode;
             Session::flash('Success','Read QR code below'); 
@@ -195,6 +193,7 @@ class MpesaController extends Controller
          }
          else{
             Session::flash('error','Something went wrong'); 
+            DB::rollback();
             return redirect()->back();
          }
     }
@@ -225,7 +224,7 @@ class MpesaController extends Controller
         );
 
         $response = $this->makePayment($auth->token,$body,$url);
-      //dd($response);  
+      
         if(isset($response->errorCode)){
             Session::flash('error',$response->errorMessage); 
             DB::rollback();
@@ -306,7 +305,7 @@ class MpesaController extends Controller
 
     }
 
-    public function queue(Request $request, $id){
+    public function b2cQueue(Request $request, $id){
         Log::info("------------Callback response-------------");
 
         $json = file_get_contents('php://input');
@@ -325,6 +324,33 @@ class MpesaController extends Controller
         $transactionCallback->save();
 
         if($obj['Body']['stkCallback']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function b2cResult(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
+        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
+        $transactionCallback->save();
+
+        if($obj['Result']['ResultCode'] == 0){
             $transaction->status = "success";
             $transaction->save();
         }

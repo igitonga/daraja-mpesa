@@ -15,7 +15,8 @@ use App\Http\Controllers\MpesaController;
 */
 Route::post('/c2b/stkpush/callback/{id}', [MpesaController::class, 'c2bStkpushCallback']);
 Route::post('/b2b/callback/{id}', [MpesaController::class, 'b2bCallback']);
-Route::post('/queue/{id}', [MpesaController::class, 'queue']);
+Route::post('/b2c/queue/{id}', [MpesaController::class, 'b2cQueue']);
+Route::post('/b2c/result/{id}', [MpesaController::class, 'b2cResult']);
 
 
 

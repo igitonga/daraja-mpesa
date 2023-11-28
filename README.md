@@ -11,6 +11,7 @@ To use this project on your personal PC follow the steps below:
 - Run composer install
 - Run npm install
 - Run cp .env.example .env
+- Run php artisan migrate
 - Run php artisan key:generate
 - Fill Mpesa env variables - you'll get these credentials from [Daraja website](https://developer.safaricom.co.ke/)
 
