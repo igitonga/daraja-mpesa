@@ -32,26 +32,28 @@
                 background: #39b54a;
                 color: #fff;
             }
+            .alert{
+                text-align: center;
+            }
         </style>
     </head>
     <body>
+        @if (\Session::has('Success'))
+            <div class="alert alert-success">
+                {!! \Session::get('Success') !!}
+            </div>
+        @endif                                
+        @if (\Session::has('error'))
+            <div class="alert alert-danger">
+                {!! \Session::get('error') !!}
+            </div>
+        @endif 
         <div class="wrapper">
             {{-- dynamic qr code --}}
             <div class="each-cont">
                 <form action="{{ url('qrcode') }}" method="get">
                     @csrf
-                    <h5>Dynamic QR code</h5>
-                    @if (\Session::has('Success'))
-                        <div class="alert alert-success">
-                            {!! \Session::get('Success') !!}
-                        </div>
-                    @endif                                
-                    @if (\Session::has('error'))
-                        <div class="alert alert-danger">
-                            {!! \Session::get('error') !!}
-                        </div>
-                    @endif 
-        
+                    <h5>Dynamic QR code</h5>       
                     @if (isset($code))
                     {!! QrCode::size(200)->generate('{{ $code }}') !!}
                     @else
@@ -69,21 +71,11 @@
                 <form action="{{ url('stkpush') }}" method="POST" class="mt-3">
                     @csrf
                     <h5>Customer to Business (STKpush)</h5><br>
-                    @if (\Session::has('Success'))
-                        <div class="alert alert-success">
-                            {!! \Session::get('Success') !!}
-                        </div>
-                    @endif                                
-                    @if (\Session::has('error'))
-                        <div class="alert alert-danger">
-                            {!! \Session::get('error') !!}
-                        </div>
-                    @endif 
                     <label for="phone">Phone number</label><br>
                     <input id="phone" type="phone" name="phone" placeholder="254713000000"><br>
         
                     <label for="amount">Amount</label><br>
-                    <input id="amount" type="number" name="amount"><br>
+                    <input id="amount" type="number" name="amount" placeholder="Minimum 1"><br>
         
                     <button class="btn mt-3">Send</button>
                 </form>
@@ -112,7 +104,7 @@
                     <h5>Business to Business (USSD push)</h5><br>
 
                     <label for="amount">Amount</label><br>
-                    <input id="amount" type="number" name="amount"><br>
+                    <input id="amount" type="number" name="amount" placeholder="Minimum 10"><br>
 
                     <button class="btn mt-3">Send</button>
                 </form>

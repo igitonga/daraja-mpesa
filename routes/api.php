@@ -13,7 +13,9 @@ use App\Http\Controllers\MpesaController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::post('/response/callback/{id}', [MpesaController::class, 'responseCallback']);
+Route::post('/c2b/stkpush/callback/{id}', [MpesaController::class, 'c2bStkpushCallback']);
+Route::post('/b2b/callback/{id}', [MpesaController::class, 'b2bCallback']);
+Route::post('/queue/{id}', [MpesaController::class, 'queue']);
 
 
 

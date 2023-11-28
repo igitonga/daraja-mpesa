@@ -9,6 +9,8 @@ use App\Models\MpesaAuthToken;
 use App\Models\TransactionCallback;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Artisan;
+use DB;
 
 class MpesaController extends Controller
 {    
@@ -76,6 +78,15 @@ class MpesaController extends Controller
 
     //business to customer simulation
     public function b2c(Request $request){
+        $auth = MpesaAuthToken::first();
+        $url = env('MPESA_BASE_URL').'/mpesa/b2c/v3/paymentrequest';
+
+        $transaction = new Transaction;
+        $transaction->amount = $request->amount;
+        $transaction->type = 'b2c';
+        $transaction->phone_number = $request->phone;
+        $transaction->save();
+
         $body = array(
             "InitiatorName" => "John Doe",
             "SecurityCredential" => env('MPESA_SECURITY_CREDENTIALS'),
@@ -84,11 +95,18 @@ class MpesaController extends Controller
             "PartyA" => env('MPESA_SHORTCODE'),
             "PartyB" => $request->phone,
             "Remarks" => "None",
-            "QueueTimeOutURL" => env('MPESA_TEST_URL')."/callback/queue",
-            "ResultURL" => env('MPESA_TEST_URL')."/callback/result",
-          "Occasion" => "None"
+            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL')."/api/queue/".$transaction->id,
+            "ResultURL" => env('MPESA_CALLBACK_URL')."/api/result/".$transaction->id,
+            "Occasion" => "None"
         );  
         
+        if(isset($response->errorCode)){
+            if($response->errorCode == "404.001.03"){
+                Session::flash('error','Access token has expired'); 
+                return redirect()->back();
+            }
+        }
+
         if($response->ResponseCode == "0"){
             Session::flash('Success','URL successfully registered'); 
             return redirect()->back();
@@ -101,7 +119,13 @@ class MpesaController extends Controller
 
     //stkpush customer to business
     public function stkPush(Request $request){
+        DB::beginTransaction();
         $auth = MpesaAuthToken::first();
+
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
+
         $url = env('MPESA_BASE_URL').'/mpesa/stkpush/v1/processrequest';
 
         $BusinessShortCode = 174379;
@@ -124,7 +148,7 @@ class MpesaController extends Controller
             "PartyA" => $request->phone,
             "PartyB" => $BusinessShortCode,
             "PhoneNumber" => $request->phone,
-            "CallBackURL" => env('MPESA_CALLBACK_URL').'/api/response/callback/'.$transaction->id,
+            "CallBackURL" => env('MPESA_CALLBACK_URL').'/api/c2b/stkpush/callback/'.$transaction->id,
             "AccountReference" => env('APP_NAME'),
             "TransactionDesc" => "Deposit"
         );
@@ -132,18 +156,19 @@ class MpesaController extends Controller
         $response = $this->makePayment($auth->token,$body,$url);
 
         if(isset($response->errorCode)){
-            if($response->errorCode == "404.001.03"){
-                Session::flash('error','Access token has expired'); 
-                return redirect()->back();
-            }
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
         }
 
         if($response->ResponseCode == "0"){
             Session::flash('Success','Input your mpesa pin'); 
+            DB::commit();
             return redirect()->back();
          }
          else{
             Session::flash('error','Something went wrong'); 
+            DB::rollback();
             return redirect()->back();
          }
     }
@@ -175,7 +200,13 @@ class MpesaController extends Controller
     }
 
     public function b2b(Request $request){
+        DB::beginTransaction();
         $auth = MpesaAuthToken::first();
+
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
+
         $url = env('MPESA_BASE_URL').'/v1/ussdpush/get-msisdn';
 
         $transaction = new Transaction;
@@ -184,23 +215,31 @@ class MpesaController extends Controller
         $transaction->save();
 
         $body = array(
-            "primaryShortCode" => 000001,
-            "receiverShortCode" => 000002,
+            "primaryShortCode" => "7318002",
+            "receiverShortCode" => "174379",
             "amount" => $request->amount,
-            "paymentRef" => "Yeey B2B",
-            "CallBackURL" => 'https://eed3-41-80-118-221.ngrok-free.app',
-            "partnerName" => "Vendor",
-            "RequestRefID" => Str::random(12),
+            "paymentRef" => "TestAccount",
+            "callbackUrl" => env('MPESA_CALLBACK_URL').'/api/b2b/callback/'.$transaction->id,
+            "partnerName" => "Test",
+            "RequestRefID" => "ODk4O-Tk4NWU4O-DQ66HD-D4OThkY"
         );
 
         $response = $this->makePayment($auth->token,$body,$url);
-        dd($response);
-        if($response->ResponseCode == "0"){
-            Session::flash('Success','Input your mpesa pin'); 
+      //dd($response);  
+        if(isset($response->errorCode)){
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
+        }
+        
+        if($response->ResponseBody->code == "0"){
+            Session::flash('Success','Transaction initiated'); 
+            DB::commit();
             return redirect()->back();
          }
          else{
             Session::flash('error','Something went wrong'); 
+            DB::rollback();
             return redirect()->back();
          }
     }
@@ -209,7 +248,65 @@ class MpesaController extends Controller
     /*
      *Responses coming from SAFARICOM
      */
-    public function responseCallback(Request $request, $id){
+    public function c2bStkpushCallback(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->merchant_request_id = $obj['Body']['stkCallback']['MerchantRequestID'];
+        $transactionCallback->checkout_request_id = $obj['Body']['stkCallback']['CheckoutRequestID'];
+        $transactionCallback->result_description = $obj['Body']['stkCallback']['ResultDesc'];
+        $transactionCallback->callback_metadata = '';
+        $transactionCallback->save();
+
+        if($obj['Body']['stkCallback']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function b2bCallback(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['conversationID'];
+        $transactionCallback->request_id = $obj['requestId'];
+        $transactionCallback->result_description = $obj['resultDesc'];
+        $transactionCallback->callback_metadata = '';
+        $transactionCallback->save();
+
+        if($obj['resultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function queue(Request $request, $id){
         Log::info("------------Callback response-------------");
 
         $json = file_get_contents('php://input');
