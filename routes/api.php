@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\MpesaController;
+use App\Http\Controllers\MpesaResponseController;
 /*
 |--------------------------------------------------------------------------
 | API Routes

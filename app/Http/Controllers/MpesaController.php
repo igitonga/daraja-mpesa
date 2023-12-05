@@ -243,122 +243,56 @@ class MpesaController extends Controller
          }
     }
 
+    public function buyGoodsAndServices(Request $request){
+        DB::beginTransaction();
+        $auth = MpesaAuthToken::first();
 
-    /*
-     *Responses coming from SAFARICOM
-     */
-    public function c2bStkpushCallback(Request $request, $id){
-        Log::info("------------Callback response-------------");
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
 
-        $json = file_get_contents('php://input');
-        $obj = json_decode($json, TRUE);
+        $url = env('MPESA_BASE_URL').'b2b/v1/paymentrequest';
 
-        Log::info($obj);
+        $transaction = new Transaction;
+        $transaction->amount = $request->amount;
+        $transaction->type = 'buyGoodsAndServices';
+        $transaction->save();
 
-        $transaction = Transaction::find($id);
+        $body = array(
+            "Initiator" => "API_Usename",
+            "SecurityCredential" => "HD/sMtv3HJl4nQ/+4DkjhRyXbV00ZqTS0WuNH8kCYB7ZNEsykFu8wxGDGWw+er8BAaXRAgNfy3U7FK+8vfPym9mhULwXpXSOaqIUPJMpClF70ZXHuX9dgc9XIzUI/celmHis/ZgtZ23OYpfOT/pHa2Ot0uRSBBzYmjXyFZr920DL/LoMK7mp50/9H0Mg6C1FdxjX0Y1ztweedG9emymvzNRE3LftPhr2IoRdwkmnkcGlaJviTACBpDeVPnZbNmqCkq1cZ0LeWEBW1nsKRxZ53x4D+eKUl8FQ9xA+P3M7r1IK2xXidcvMEFlNuC/dlYvtWcoO3NVnvLTHsWXV1/v+lA==",
+            "Command ID" => "BusinessBuyGoods",
+            "SenderIdentifierType" => "4",
+            "RecieverIdentifierType" => "4",
+            "Amount" => $request->amount,
+            "PartyA" => "123456",
+            "PartyB" => "000000",
+            "AccountReference" => "353353",
+            "Requester" => "254700000000",
+            "Remarks" => "OK",
+            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL').'/api/queue',
+            "ResultURL" => env('MPESA_CALLBACK_URL').'/api/result',
+        );
+
+        $response = $this->makePayment($auth->token,$body,$url);
+      dd($response);
+        if(isset($response->errorCode)){
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
+        }
         
-        $transactionCallback = new TransactionCallback;
-        $transactionCallback->transaction_id = $transaction->id;
-        $transactionCallback->merchant_request_id = $obj['Body']['stkCallback']['MerchantRequestID'];
-        $transactionCallback->checkout_request_id = $obj['Body']['stkCallback']['CheckoutRequestID'];
-        $transactionCallback->result_description = $obj['Body']['stkCallback']['ResultDesc'];
-        $transactionCallback->callback_metadata = '';
-        $transactionCallback->save();
-
-        if($obj['Body']['stkCallback']['ResultCode'] == 0){
-            $transaction->status = "success";
-            $transaction->save();
-        }
-        else{
-            $transaction->status = "failed";
-            $transaction->save();    
-        }
-
+        if($response->ResponseBody->code == "0"){
+            Session::flash('Success','Transaction initiated'); 
+            DB::commit();
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            DB::rollback();
+            return redirect()->back();
+         }
     }
 
-    public function b2bCallback(Request $request, $id){
-        Log::info("------------Callback response-------------");
-
-        $json = file_get_contents('php://input');
-        $obj = json_decode($json, TRUE);
-
-        Log::info($obj);
-
-        $transaction = Transaction::find($id);
-        
-        $transactionCallback = new TransactionCallback;
-        $transactionCallback->transaction_id = $transaction->id;
-        $transactionCallback->conversation_id = $obj['conversationID'];
-        $transactionCallback->request_id = $obj['requestId'];
-        $transactionCallback->result_description = $obj['resultDesc'];
-        $transactionCallback->callback_metadata = '';
-        $transactionCallback->save();
-
-        if($obj['resultCode'] == 0){
-            $transaction->status = "success";
-            $transaction->save();
-        }
-        else{
-            $transaction->status = "failed";
-            $transaction->save();    
-        }
-
-    }
-
-    public function b2cQueue(Request $request, $id){
-        Log::info("------------Callback response-------------");
-
-        $json = file_get_contents('php://input');
-        $obj = json_decode($json, TRUE);
-
-        Log::info($obj);
-
-        $transaction = Transaction::find($id);
-        
-        $transactionCallback = new TransactionCallback;
-        $transactionCallback->transaction_id = $transaction->id;
-        $transactionCallback->merchant_request_id = $obj['Body']['stkCallback']['MerchantRequestID'];
-        $transactionCallback->checkout_request_id = $obj['Body']['stkCallback']['CheckoutRequestID'];
-        $transactionCallback->result_description = $obj['Body']['stkCallback']['ResultDesc'];
-        $transactionCallback->callback_metadata = '';
-        $transactionCallback->save();
-
-        if($obj['Body']['stkCallback']['ResultCode'] == 0){
-            $transaction->status = "success";
-            $transaction->save();
-        }
-        else{
-            $transaction->status = "failed";
-            $transaction->save();    
-        }
-
-    }
-
-    public function b2cResult(Request $request, $id){
-        Log::info("------------Callback response-------------");
-
-        $json = file_get_contents('php://input');
-        $obj = json_decode($json, TRUE);
-
-        Log::info($obj);
-
-        $transaction = Transaction::find($id);
-        
-        $transactionCallback = new TransactionCallback;
-        $transactionCallback->transaction_id = $transaction->id;
-        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
-        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
-        $transactionCallback->save();
-
-        if($obj['Result']['ResultCode'] == 0){
-            $transaction->status = "success";
-            $transaction->save();
-        }
-        else{
-            $transaction->status = "failed";
-            $transaction->save();    
-        }
-
-    }
 
 }

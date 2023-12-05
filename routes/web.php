@@ -26,3 +26,4 @@ Route::get('/qrcode',[MpesaController::class, 'dynamicQRcode']);
 Route::post('/b2c',[MpesaController::class, 'b2c']);
 Route::post('/stkpush',[MpesaController::class, 'stkPush']);
 Route::post('/b2b',[MpesaController::class, 'b2b']);
+Route::post('/buy-goods-services',[MpesaController::class, 'buyGoodsAndServices']);

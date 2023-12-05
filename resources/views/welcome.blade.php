@@ -97,6 +97,32 @@
                 </form>
             </div>
 
+            {{-- Buy goods and services --}}
+            <div class="each-cont">
+                <form action="{{ url('buy-goods-services') }}" method="POST" class="mt-3">
+                    @csrf
+                    <h5>Buy goods and services</h5><br>
+
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount" placeholder="Minimum 10"><br>
+        
+                    <button class="btn mt-3">Send</button>
+                </form>
+            </div>
+
+            {{-- Business paybill --}}
+            <div class="each-cont">
+                <form action="{{ url('buy-goods-services') }}" method="POST" class="mt-3">
+                    @csrf
+                    <h5>Business paybill</h5><br>
+
+                    <label for="amount">Amount</label><br>
+                    <input id="amount" type="number" name="amount" placeholder="Minimum 10"><br>
+        
+                    <button class="btn mt-3">Send</button>
+                </form>
+            </div>
+
             {{-- b2b --}}
             <div class="each-cont">
                 <form action="{{ url('b2b') }}" method="POST" class="mt-3">
