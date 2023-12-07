@@ -13,10 +13,14 @@ use App\Http\Controllers\MpesaResponseController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-Route::post('/c2b/stkpush/callback/{id}', [MpesaController::class, 'c2bStkpushCallback']);
-Route::post('/b2b/callback/{id}', [MpesaController::class, 'b2bCallback']);
-Route::post('/b2c/queue/{id}', [MpesaController::class, 'b2cQueue']);
-Route::post('/b2c/result/{id}', [MpesaController::class, 'b2cResult']);
+Route::post('/c2b/stkpush/callback/{id}', [MpesaResponseController::class, 'c2bStkpushCallback']);
+Route::post('/b2b/callback/{id}', [MpesaResponseController::class, 'b2bCallback']);
+Route::post('/b2c/queue/{id}', [MpesaResponseController::class, 'b2cQueue']);
+Route::post('/b2c/result/{id}', [MpesaResponseController::class, 'b2cResult']);
+Route::post('/buy-goods-services/queue/{id}', [MpesaResponseController::class, 'buyGoodsAndServicesQueue']);
+Route::post('/buy-goods-services/result/{id}', [MpesaResponseController::class, 'buyGoodsAndServicesResult']);
+Route::post('/paybill/queue/{id}', [MpesaResponseController::class, 'paybill']);
+Route::post('/paybill/result/{id}', [MpesaResponseController::class, 'paybill']);
 
 
 

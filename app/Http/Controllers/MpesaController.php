@@ -251,7 +251,7 @@ class MpesaController extends Controller
             Artisan::call("mpesa:refresh-auth-token");
             $auth = MpesaAuthToken::first();
 
-        $url = env('MPESA_BASE_URL').'b2b/v1/paymentrequest';
+        $url = env('MPESA_BASE_URL').'/mpesa/b2b/v1/paymentrequest';
 
         $transaction = new Transaction;
         $transaction->amount = $request->amount;
@@ -260,8 +260,8 @@ class MpesaController extends Controller
 
         $body = array(
             "Initiator" => "API_Usename",
-            "SecurityCredential" => "HD/sMtv3HJl4nQ/+4DkjhRyXbV00ZqTS0WuNH8kCYB7ZNEsykFu8wxGDGWw+er8BAaXRAgNfy3U7FK+8vfPym9mhULwXpXSOaqIUPJMpClF70ZXHuX9dgc9XIzUI/celmHis/ZgtZ23OYpfOT/pHa2Ot0uRSBBzYmjXyFZr920DL/LoMK7mp50/9H0Mg6C1FdxjX0Y1ztweedG9emymvzNRE3LftPhr2IoRdwkmnkcGlaJviTACBpDeVPnZbNmqCkq1cZ0LeWEBW1nsKRxZ53x4D+eKUl8FQ9xA+P3M7r1IK2xXidcvMEFlNuC/dlYvtWcoO3NVnvLTHsWXV1/v+lA==",
-            "Command ID" => "BusinessBuyGoods",
+            "SecurityCredential" => "GisJmyDdFZsNfh0EkOTqAE25ONer10DlcdLXt4yC2kQhG+9LSlO/PjfSqv6MGOZkp35EkRUEm/oX2jbp3XtJ0YmQNqL+Iqbkd+vYTCKGd0XHqayDTtlW1+t5Zwu2XQBNRjNb2ShpV49o9syHGgZ8Gw5ejkj9t+T4UDNJQBWykq/vxYw+KyqotnsWFOAB8GRO3k77QtQPHELbogd+dVb2UXGJc8MFrLpnqt7JmcbdIew7gN+fOosA1VyRV8I/FJuh69AuB3M7O57+nlz0FDzbHuBwUwctE3dp0ixMFICeE7sj/cAb+n4cZ+Uqxij2FG52e0IVwKB7hg1oEGCwrV7XSw==",
+            "CommandID" => "BusinessPayBill",
             "SenderIdentifierType" => "4",
             "RecieverIdentifierType" => "4",
             "Amount" => $request->amount,
@@ -270,19 +270,70 @@ class MpesaController extends Controller
             "AccountReference" => "353353",
             "Requester" => "254700000000",
             "Remarks" => "OK",
-            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL').'/api/queue',
-            "ResultURL" => env('MPESA_CALLBACK_URL').'/api/result',
+            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL')."/buy-goods-services/queue/".$transaction->id,
+            "ResultURL" => env('MPESA_CALLBACK_URL')."/buy-goods-services/result/".$transaction->id,
         );
 
         $response = $this->makePayment($auth->token,$body,$url);
-      dd($response);
+      //dd($response);
         if(isset($response->errorCode)){
             Session::flash('error',$response->errorMessage); 
             DB::rollback();
             return redirect()->back();
         }
         
-        if($response->ResponseBody->code == "0"){
+        if($response->ResponseCode == "0"){
+            Session::flash('Success','Transaction initiated'); 
+            DB::commit();
+            return redirect()->back();
+         }
+         else{
+            Session::flash('error','Something went wrong'); 
+            DB::rollback();
+            return redirect()->back();
+         }
+    }
+
+    public function paybill(Request $request){
+        DB::beginTransaction();
+        $auth = MpesaAuthToken::first();
+
+        if(is_null($auth))
+            Artisan::call("mpesa:refresh-auth-token");
+            $auth = MpesaAuthToken::first();
+
+        $url = env('MPESA_BASE_URL').'/mpesa/b2b/v1/paymentrequest ';
+
+        $transaction = new Transaction;
+        $transaction->amount = $request->amount;
+        $transaction->type = 'paybill';
+        $transaction->save();
+
+        $body = array(
+            "Initiator" => "API_Usename",
+            "SecurityCredential" => "GisJmyDdFZsNfh0EkOTqAE25ONer10DlcdLXt4yC2kQhG+9LSlO/PjfSqv6MGOZkp35EkRUEm/oX2jbp3XtJ0YmQNqL+Iqbkd+vYTCKGd0XHqayDTtlW1+t5Zwu2XQBNRjNb2ShpV49o9syHGgZ8Gw5ejkj9t+T4UDNJQBWykq/vxYw+KyqotnsWFOAB8GRO3k77QtQPHELbogd+dVb2UXGJc8MFrLpnqt7JmcbdIew7gN+fOosA1VyRV8I/FJuh69AuB3M7O57+nlz0FDzbHuBwUwctE3dp0ixMFICeE7sj/cAb+n4cZ+Uqxij2FG52e0IVwKB7hg1oEGCwrV7XSw==",
+            "CommandID" => "BusinessPayBill",
+            "SenderIdentifierType" => "4",
+            "RecieverIdentifierType" => "4",
+            "Amount" => $request->amount,
+            "PartyA" => "123456",
+            "PartyB" => "000000",
+            "AccountReference" => "353353",
+            "Requester" => "254700000000",
+            "Remarks" => "OK",
+            "QueueTimeOutURL" => env('MPESA_CALLBACK_URL')."/paybill/queue/".$transaction->id,
+            "ResultURL" => env('MPESA_CALLBACK_URL')."/paybill/result/".$transaction->id,
+        );
+
+        $response = $this->makePayment($auth->token,$body,$url);
+      //dd($response);
+        if(isset($response->errorCode)){
+            Session::flash('error',$response->errorMessage); 
+            DB::rollback();
+            return redirect()->back();
+        }
+        
+        if($response->ResponseCode == "0"){
             Session::flash('Success','Transaction initiated'); 
             DB::commit();
             return redirect()->back();

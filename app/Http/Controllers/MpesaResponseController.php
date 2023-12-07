@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use App\Models\Transaction;
+use App\Models\TransactionCallback;
 
 class MpesaResponseController extends Controller
 {
@@ -92,6 +95,114 @@ class MpesaResponseController extends Controller
     }
 
     public function b2cResult(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
+        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
+        $transactionCallback->save();
+
+        if($obj['Result']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function buyGoodsAndServicesQueue(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
+        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
+        $transactionCallback->save();
+
+        if($obj['Result']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function buyGoodsAndServicesResult(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
+        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
+        $transactionCallback->save();
+
+        if($obj['Result']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function paybillQueue(Request $request, $id){
+        Log::info("------------Callback response-------------");
+
+        $json = file_get_contents('php://input');
+        $obj = json_decode($json, TRUE);
+
+        Log::info($obj);
+
+        $transaction = Transaction::find($id);
+        
+        $transactionCallback = new TransactionCallback;
+        $transactionCallback->transaction_id = $transaction->id;
+        $transactionCallback->conversation_id = $obj['Result']['ConversationID'];
+        $transactionCallback->result_description = $obj['Result']['ResultDesc'];
+        $transactionCallback->save();
+
+        if($obj['Result']['ResultCode'] == 0){
+            $transaction->status = "success";
+            $transaction->save();
+        }
+        else{
+            $transaction->status = "failed";
+            $transaction->save();    
+        }
+
+    }
+
+    public function paybillResult(Request $request, $id){
         Log::info("------------Callback response-------------");
 
         $json = file_get_contents('php://input');

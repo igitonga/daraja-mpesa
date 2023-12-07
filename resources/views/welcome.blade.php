@@ -17,19 +17,21 @@
         </style>
     </head>
     <body>
+        <x-navbar/>
+
         @if (\Session::has('Success'))
-            <div class="alert bg-green-600">
+            <div class="alert bg-green-600 mx-8">
                 <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
                 <strong>{!! \Session::get('Success') !!}</strong>
             </div>
         @endif                                
         @if (\Session::has('error'))
-            <div class="alert bg-red-600">
+            <div class="alert bg-red-600 mx-8">
                 <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
                 <strong>{!! \Session::get('error') !!}</strong>
             </div>          
         @endif 
-        <div class="grid grid-cols-2 gap-x-4 gap-y-4 p-8">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-4 px-8 py-4">
             {{-- dynamic qr code --}}
             <div class="each-cont p-6 rounded-lg">
                 <form action="{{ url('qrcode') }}" method="get">
@@ -93,7 +95,7 @@
 
             {{-- Business paybill --}}
             <div class="each-cont p-6 rounded-lg">
-                <form action="{{ url('buy-goods-services') }}" method="POST">
+                <form action="{{ url('paybill') }}" method="POST">
                     @csrf
                     <h5 class="text-xl font-bold">Business paybill</h5><br>
 

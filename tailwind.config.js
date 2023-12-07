@@ -37,6 +37,21 @@ module.exports = {
           '&:hover' :{
             color: '#000',
           }
+        },
+        '.nav-link': {
+          color: '#fff',
+          fontWeight: 'bold',
+          border: '1px solid #fff',
+          padding: '8px 14px',
+          borderRadius: '20px',
+          '&:hover': {
+            cursor: 'pointer',
+            background: '#fff',
+            color: 'green',
+          }
+        },
+        '.logo': {
+          width: '50px',
         }
       })
     }

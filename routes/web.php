@@ -18,6 +18,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/analytics', function () {
+    return view('analytics');
+});
+
 /*
  *My operation endpoints
 */
@@ -27,3 +31,4 @@ Route::post('/b2c',[MpesaController::class, 'b2c']);
 Route::post('/stkpush',[MpesaController::class, 'stkPush']);
 Route::post('/b2b',[MpesaController::class, 'b2b']);
 Route::post('/buy-goods-services',[MpesaController::class, 'buyGoodsAndServices']);
+Route::post('/paybill',[MpesaController::class, 'paybill']);
