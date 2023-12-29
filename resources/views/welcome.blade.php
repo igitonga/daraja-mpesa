@@ -1,24 +1,12 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        @vite('resources/css/app.css')
-        <link rel="stylesheet" href="{{ mix('css/app.css') }}">
-        <title>Mpesa</title>
-        <!-- Fonts -->
-        <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 
-        <!-- Styles -->
-        <style>
-            h5{
-                color: #39b54a;
-            }
-        </style>
-    </head>
-    <body>
-        <x-navbar/>
+@extends('layouts.layout')
 
+@section('title')
+    Operations
+@endsection
+
+@section('content')
         @if (\Session::has('Success'))
             <div class="alert bg-green-600 mx-8">
                 <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
@@ -31,6 +19,7 @@
                 <strong>{!! \Session::get('error') !!}</strong>
             </div>          
         @endif 
+
         <div class="grid grid-cols-2 gap-x-4 gap-y-4 px-8 py-4">
             {{-- dynamic qr code --}}
             <div class="each-cont p-6 rounded-lg">
@@ -118,7 +107,6 @@
                     <button class="btn py-2 px-6 rounded-lg">Send</button>
                 </form>
             </div>
-        </div>     
-    </body>
-    
-</html>
+        </div>   
+@endsection
+        
