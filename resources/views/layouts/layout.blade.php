@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
     <link href="https://fonts.bunny.net/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     @vite('resources/css/app.css')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <title>@yield('title')</title>
     <style>
         h5{
@@ -18,6 +19,5 @@
      <x-navbar />
     
     @yield('content')
-    
 </body>
 </html>

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\MpesaResponseController;
+use App\Http\Controllers\AnalysisController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -32,3 +33,8 @@ Route::post('/stkpush',[MpesaController::class, 'stkPush']);
 Route::post('/b2b',[MpesaController::class, 'b2b']);
 Route::post('/buy-goods-services',[MpesaController::class, 'buyGoodsAndServices']);
 Route::post('/paybill',[MpesaController::class, 'paybill']);
+
+/*
+ *Analysis endpoints
+*/
+Route::get('analytics', [AnalysisController::class, 'transactionStatus']);
