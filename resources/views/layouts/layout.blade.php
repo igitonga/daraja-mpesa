@@ -13,6 +13,9 @@
         h5{
             color: #39b54a;
         }
+        h1{
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>

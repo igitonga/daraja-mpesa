@@ -8,6 +8,7 @@
 @section('content')
     <div class="grid grid-cols-3 gap-4 px-8 py-4">
         <span>
+            <h1 class="text-center font-bold text-lg">Transaction Status</h1>
             <canvas id="transactionStatus"></canvas>
         </span>
     </div>

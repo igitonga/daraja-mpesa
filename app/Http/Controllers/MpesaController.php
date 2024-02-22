@@ -186,7 +186,7 @@ class MpesaController extends Controller
             return redirect()->back();
         }
 
-        if($response->ResponseCode == "0"){
+        if( isset($response->ResponseCode) && $response->ResponseCode == "0"){
             $code = $response->QRCode;
             Session::flash('Success','Read QR code below'); 
             return view('welcome', compact('code'));
