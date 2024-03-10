@@ -15,3 +15,5 @@ To use this project on your personal PC follow the steps below:
 - Run php artisan key:generate
 - Fill Mpesa env variables - you'll get these credentials from [Daraja website](https://developer.safaricom.co.ke/)
 
+UI is bundled by vite so you can run npm run dev to use interface.
+
