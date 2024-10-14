@@ -7,13 +7,39 @@ on what might happen if you use it on your project.
 
 To use this project on your personal PC follow the steps below:
 
-- Clone project
-- Run composer install
-- Run npm install
-- Run cp .env.example .env
-- Run php artisan migrate
-- Run php artisan key:generate
-- Fill Mpesa env variables - you'll get these credentials from [Daraja website](https://developer.safaricom.co.ke/)
+### 1. Clone Repository
+```bash
+git clone https://github.com/KreateyouMain/bizcore.git
+```
+### 2. Install composer dependencies
+```bash
+composer install
+```
+### 3. Install node dependencies
+```bash
+npm install
+```
+### 4. Generate .env file from .env.example
+```bash
+cp .env.example .env
+```
+### 5. Migrate your database after connecting to one
+```bash
+php artisan migrate
+```
+### 5. Generate application key
+```bash
+php artisan key:generate
+```
+### 5. Run laravel server
+```bash
+php artisan serve
+```
+### 5. UI is bundled by vite to use interface.
+```bash
+npm run dev
+```
 
-UI is bundled by vite so you can run npm run dev to use interface.
+- Fill Mpesa .env variables - you'll get these credentials from [Daraja website](https://developer.safaricom.co.ke/)
+
 
